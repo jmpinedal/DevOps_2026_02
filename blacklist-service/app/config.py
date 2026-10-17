@@ -1,6 +1,8 @@
 import os
 from urllib.parse import quote_plus
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 def _database_url():
     # Elastic Beanstalk inyecta RDS_* al asociar una base RDS al entorno.
@@ -8,10 +10,14 @@ def _database_url():
         # quote_plus: la contraseña puede contener caracteres como @, : o /.
         user = quote_plus(os.environ["RDS_USERNAME"])
         password = quote_plus(os.environ["RDS_PASSWORD"])
+        # RDS fuerza TLS. verify-full valida el certificado y el nombre del host
+        # contra el bundle oficial de AWS incluido en el proyecto (certs/).
+        ca_bundle = os.path.join(BASE_DIR, "certs", "global-bundle.pem")
         return (
             f"postgresql+psycopg2://{user}:{password}"
             f"@{os.environ['RDS_HOSTNAME']}:{os.environ.get('RDS_PORT', '5432')}"
             f"/{os.environ['RDS_DB_NAME']}"
+            f"?sslmode=verify-full&sslrootcert={quote_plus(ca_bundle)}&connect_timeout=5"
         )
     url = os.environ.get(
         "DATABASE_URL",
