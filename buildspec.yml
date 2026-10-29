@@ -1,0 +1,63 @@
+version: 0.2
+
+env:
+  variables:
+    SERVICE_DIR: blacklist-service
+    PYTHONDONTWRITEBYTECODE: "1"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - cd "$CODEBUILD_SRC_DIR/$SERVICE_DIR" && pip install -r requirements.txt pytest
+
+  pre_build:
+    commands:
+      - python --version
+      - echo "Build $CODEBUILD_BUILD_NUMBER, commit $CODEBUILD_RESOLVED_SOURCE_VERSION"
+
+  build:
+    commands:
+      - mkdir -p "$CODEBUILD_SRC_DIR/reports"
+      - cd "$CODEBUILD_SRC_DIR/$SERVICE_DIR" && python -m pytest -v --junitxml="$CODEBUILD_SRC_DIR/reports/pytest.xml"
+
+  post_build:
+    commands:
+      - |
+        python - <<'PY'
+        import os
+        import sys
+        import zipfile
+
+        root = os.environ["CODEBUILD_SRC_DIR"]
+        src = os.path.join(root, os.environ["SERVICE_DIR"])
+
+        if os.environ.get("CODEBUILD_BUILD_SUCCEEDING") != "1":
+            sys.exit(0)
+
+        os.makedirs(os.path.join(root, "dist"), exist_ok=True)
+        target = os.path.join(root, "dist", "blacklist-service.zip")
+        skip_dirs = {"tests", "__pycache__", ".pytest_cache", ".venv", ".git"}
+        with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as bundle:
+            for folder, dirs, files in os.walk(src):
+                dirs[:] = [d for d in dirs if d not in skip_dirs]
+                for name in files:
+                    if name.endswith((".pyc", ".zip")):
+                        continue
+                    path = os.path.join(folder, name)
+                    bundle.write(path, os.path.relpath(path, src))
+        print("Artefacto generado: dist/blacklist-service.zip")
+        PY
+
+reports:
+  pytest_reports:
+    files:
+      - pytest.xml
+    base-directory: reports
+    file-format: JUNITXML
+
+artifacts:
+  files:
+    - dist/blacklist-service.zip
+  discard-paths: yes
