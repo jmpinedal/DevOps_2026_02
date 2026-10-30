@@ -185,5 +185,3 @@ También puedes importar la colección [Blacklist API - Entrega 1](./postman/Bla
 
 El servicio incluye un `Procfile` de Gunicorn y configuración para AWS Elastic Beanstalk en `blacklist-service/.ebextensions/`. Configura `JWT_SECRET_KEY` en el entorno de despliegue y proporciona una base PostgreSQL/RDS antes de publicar la aplicación.
 
-test
----
