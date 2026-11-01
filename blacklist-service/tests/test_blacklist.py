@@ -17,7 +17,7 @@ def _payload(**overrides):
 def test_post_adds_email_and_stores_ip_and_timestamp(client, auth_headers, app):
     resp = client.post("/blacklists", json=_payload(), headers=auth_headers)
 
-    assert resp.status_code == 204
+    assert resp.status_code == 201
     assert "agregado" in resp.get_json()["message"]
 
     with app.app_context():
