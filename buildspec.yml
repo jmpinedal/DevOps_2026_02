@@ -34,13 +34,25 @@ phases:
       - printf '{"ImageURI":"%s"}' "$ECR_REPO:$IMAGE_TAG" > "$CODEBUILD_SRC_DIR/imageDetail.json"
       - cp "$CODEBUILD_SRC_DIR/$SERVICE_DIR/deploy/appspec.yaml" "$CODEBUILD_SRC_DIR/appspec.yaml"
       - cp "$CODEBUILD_SRC_DIR/$SERVICE_DIR/deploy/taskdef.json" "$CODEBUILD_SRC_DIR/taskdef.json"
+      # Para CodePipeline (despliegue ECS estándar). "name" debe coincidir con el contenedor de taskdef.json.
+      - printf '[{"name":"blacklist","imageUri":"%s"}]' "$ECR_REPO:$IMAGE_TAG" > "$CODEBUILD_SRC_DIR/imagedefinitions.json"
+      - cat imagedefinitions.json imageDetail.json
 
 artifacts:
   files:
-    - appspec.yaml
-    - taskdef.json
+    - imagedefinitions.json
     - imageDetail.json
   discard-paths: yes
+  secondary-artifacts:
+    DefinitionArtifact:
+      files:
+        - appspec.yaml
+        - taskdef.json
+      discard-paths: yes
+    ImageArtifact:
+      files:
+        - imageDetail.json
+      discard-paths: yes
 
 reports:
   pytest_reports:
