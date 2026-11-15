@@ -33,24 +33,14 @@ phases:
       - printf '{"ImageURI":"%s"}' "$ECR_REPO:$IMAGE_TAG" > "$CODEBUILD_SRC_DIR/imageDetail.json"
       - cp "$CODEBUILD_SRC_DIR/$SERVICE_DIR/deploy/appspec.yaml" "$CODEBUILD_SRC_DIR/appspec.yaml"
       - cp "$CODEBUILD_SRC_DIR/$SERVICE_DIR/deploy/taskdef.json" "$CODEBUILD_SRC_DIR/taskdef.json"
-      - printf '[{"name":"blacklist","imageUri":"%s"}]' "$ECR_REPO:$IMAGE_TAG" > "$CODEBUILD_SRC_DIR/imagedefinitions.json"
-      - cat "$CODEBUILD_SRC_DIR/imagedefinitions.json" "$CODEBUILD_SRC_DIR/imageDetail.json"
+      - cat "$CODEBUILD_SRC_DIR/imageDetail.json"
 
 artifacts:
   files:
-    - imagedefinitions.json
+    - appspec.yaml
+    - taskdef.json
     - imageDetail.json
   discard-paths: yes
-  secondary-artifacts:
-    DefinitionArtifact:
-      files:
-        - appspec.yaml
-        - taskdef.json
-      discard-paths: yes
-    ImageArtifact:
-      files:
-        - imageDetail.json
-      discard-paths: yes
 
 reports:
   pytest_reports:

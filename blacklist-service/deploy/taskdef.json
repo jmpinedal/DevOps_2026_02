@@ -2,20 +2,36 @@
   "family": "blacklist-task",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
-  "cpu": "<CPU>",
-  "memory": "<MEMORY>",
-  "executionRoleArn": "<EXECUTION_ROLE_ARN>",
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::753916465067:role/LabRole",
   "containerDefinitions": [
     {
       "name": "blacklist",
       "image": "<IMAGE1_NAME>",
       "essential": true,
       "portMappings": [
-        {
-          "containerPort": 8000,
-          "protocol": "tcp"
+        { "containerPort": 8000, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "RDS_HOSTNAME", "value": "blacklist-db.c61g2uqse1kg.us-east-1.rds.amazonaws.com" },
+        { "name": "RDS_PORT", "value": "5432" },
+        { "name": "RDS_DB_NAME", "value": "blacklist" },
+        { "name": "RDS_USERNAME", "value": "blacklist_admin" },
+        { "name": "TRUST_PROXY_HEADERS", "value": "true" }
+      ],
+      "secrets": [
+        { "name": "RDS_PASSWORD", "valueFrom": "arn:aws:secretsmanager:us-east-1:753916465067:secret:secret-3X2vjT:RDS_PASSWORD::" },
+        { "name": "JWT_SECRET_KEY", "valueFrom": "arn:aws:secretsmanager:us-east-1:753916465067:secret:secret-3X2vjT:JWT_SECRET_KEY::" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/blacklist-task",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
         }
-      ]
+      }
     }
   ]
 }

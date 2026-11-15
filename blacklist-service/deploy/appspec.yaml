@@ -3,7 +3,6 @@ Resources:
   - TargetService:
       Type: AWS::ECS::Service
       Properties:
-        # CodeDeploy reemplaza este valor por el ARN de la nueva revisión de la tarea.
         TaskDefinition: <TASK_DEFINITION>
         LoadBalancerInfo:
           ContainerName: "blacklist"
