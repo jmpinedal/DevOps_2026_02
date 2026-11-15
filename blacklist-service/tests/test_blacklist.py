@@ -35,7 +35,7 @@ def test_post_without_blocked_reason_is_allowed(client, auth_headers):
         json={"email": "a@example.com", "app_uuid": APP_UUID},
         headers=auth_headers,
     )
-    assert resp.status_code == 401
+    assert resp.status_code == 201
 
 
 def test_post_blocked_reason_of_255_chars_is_allowed(client, auth_headers):
