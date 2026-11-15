@@ -67,4 +67,3 @@ artifacts:
   files:
     - dist/blacklist-service.zip
   discard-paths: yes
-
