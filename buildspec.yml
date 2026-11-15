@@ -4,6 +4,8 @@ env:
   variables:
     SERVICE_DIR: blacklist-service
     PYTHONDONTWRITEBYTECODE: "1"
+    AWS_REGION: us-east-1
+    ECR_REPO: 753916465067.dkr.ecr.us-east-1.amazonaws.com/blacklist-service
 
 phases:
   install:
@@ -20,7 +22,11 @@ phases:
   build:
     commands:
       - mkdir -p "$CODEBUILD_SRC_DIR/reports"
+      # Si pytest falla, la fase build se detiene aquí y no se construye ni publica la imagen.
       - cd "$CODEBUILD_SRC_DIR/$SERVICE_DIR" && python -m pytest -v --junitxml="$CODEBUILD_SRC_DIR/reports/pytest.xml"
+      - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "${ECR_REPO%%/*}"
+      - docker build -t "$ECR_REPO:latest" "$CODEBUILD_SRC_DIR/$SERVICE_DIR"
+      - docker push "$ECR_REPO:latest"
 
   post_build:
     commands:
