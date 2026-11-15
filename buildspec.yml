@@ -18,7 +18,6 @@ phases:
     commands:
       - python --version
       - echo "Build $CODEBUILD_BUILD_NUMBER, commit $CODEBUILD_RESOLVED_SOURCE_VERSION"
-      # Tag con fecha en hora de Colombia (COT, UTC-5) y número de build, p. ej. 20261114.42
       - IMAGE_TAG="$(TZ=America/Bogota date +%Y%m%d).${CODEBUILD_BUILD_NUMBER}"
 
   build:
@@ -34,9 +33,8 @@ phases:
       - printf '{"ImageURI":"%s"}' "$ECR_REPO:$IMAGE_TAG" > "$CODEBUILD_SRC_DIR/imageDetail.json"
       - cp "$CODEBUILD_SRC_DIR/$SERVICE_DIR/deploy/appspec.yaml" "$CODEBUILD_SRC_DIR/appspec.yaml"
       - cp "$CODEBUILD_SRC_DIR/$SERVICE_DIR/deploy/taskdef.json" "$CODEBUILD_SRC_DIR/taskdef.json"
-      # Para CodePipeline (despliegue ECS estándar). "name" debe coincidir con el contenedor de taskdef.json.
       - printf '[{"name":"blacklist","imageUri":"%s"}]' "$ECR_REPO:$IMAGE_TAG" > "$CODEBUILD_SRC_DIR/imagedefinitions.json"
-      - cat imagedefinitions.json imageDetail.json
+      - cat "$CODEBUILD_SRC_DIR/imagedefinitions.json" "$CODEBUILD_SRC_DIR/imageDetail.json"
 
 artifacts:
   files:
