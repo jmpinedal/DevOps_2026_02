@@ -18,6 +18,8 @@ phases:
     commands:
       - python --version
       - echo "Build $CODEBUILD_BUILD_NUMBER, commit $CODEBUILD_RESOLVED_SOURCE_VERSION"
+      # Tag inmutable por commit (7 caracteres); si no hay commit, usa el número de build.
+      - IMAGE_TAG=$(echo "${CODEBUILD_RESOLVED_SOURCE_VERSION:-build$CODEBUILD_BUILD_NUMBER}" | cut -c1-7)
 
   build:
     commands:
@@ -25,36 +27,20 @@ phases:
       # Si pytest falla, la fase build se detiene aquí y no se construye ni publica la imagen.
       - cd "$CODEBUILD_SRC_DIR/$SERVICE_DIR" && python -m pytest -v --junitxml="$CODEBUILD_SRC_DIR/reports/pytest.xml"
       - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "${ECR_REPO%%/*}"
-      - docker build -t "$ECR_REPO:latest" "$CODEBUILD_SRC_DIR/$SERVICE_DIR"
+      - docker build -t "$ECR_REPO:$IMAGE_TAG" -t "$ECR_REPO:latest" "$CODEBUILD_SRC_DIR/$SERVICE_DIR"
+      - docker push "$ECR_REPO:$IMAGE_TAG"
       - docker push "$ECR_REPO:latest"
+      # Archivos que CodeDeploy (ECS) necesita. La imagen nueva va en imageDetail.json.
+      - printf '{"ImageURI":"%s"}' "$ECR_REPO:$IMAGE_TAG" > "$CODEBUILD_SRC_DIR/imageDetail.json"
+      - cp "$CODEBUILD_SRC_DIR/$SERVICE_DIR/deploy/appspec.yaml" "$CODEBUILD_SRC_DIR/appspec.yaml"
+      - cp "$CODEBUILD_SRC_DIR/$SERVICE_DIR/deploy/taskdef.json" "$CODEBUILD_SRC_DIR/taskdef.json"
 
-  post_build:
-    commands:
-      - |
-        python - <<'PY'
-        import os
-        import sys
-        import zipfile
-
-        root = os.environ["CODEBUILD_SRC_DIR"]
-        src = os.path.join(root, os.environ["SERVICE_DIR"])
-
-        if os.environ.get("CODEBUILD_BUILD_SUCCEEDING") != "1":
-            sys.exit(0)
-
-        os.makedirs(os.path.join(root, "dist"), exist_ok=True)
-        target = os.path.join(root, "dist", "blacklist-service.zip")
-        skip_dirs = {"tests", "__pycache__", ".pytest_cache", ".venv", ".git"}
-        with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as bundle:
-            for folder, dirs, files in os.walk(src):
-                dirs[:] = [d for d in dirs if d not in skip_dirs]
-                for name in files:
-                    if name.endswith((".pyc", ".zip")):
-                        continue
-                    path = os.path.join(folder, name)
-                    bundle.write(path, os.path.relpath(path, src))
-        print("Artefacto generado: dist/blacklist-service.zip")
-        PY
+artifacts:
+  files:
+    - appspec.yaml
+    - taskdef.json
+    - imageDetail.json
+  discard-paths: yes
 
 reports:
   pytest_reports:
@@ -62,4 +48,3 @@ reports:
       - pytest.xml
     base-directory: reports
     file-format: JUNITXML
-
