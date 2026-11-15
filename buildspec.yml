@@ -18,8 +18,8 @@ phases:
     commands:
       - python --version
       - echo "Build $CODEBUILD_BUILD_NUMBER, commit $CODEBUILD_RESOLVED_SOURCE_VERSION"
-      # Tag inmutable por commit (7 caracteres); si no hay commit, usa el número de build.
-      - IMAGE_TAG=$(echo "${CODEBUILD_RESOLVED_SOURCE_VERSION:-build$CODEBUILD_BUILD_NUMBER}" | cut -c1-7)
+      # Tag con fecha en hora de Colombia (COT, UTC-5) y número de build, p. ej. 20261114.42
+      - IMAGE_TAG="$(TZ=America/Bogota date +%Y%m%d).${CODEBUILD_BUILD_NUMBER}"
 
   build:
     commands:
